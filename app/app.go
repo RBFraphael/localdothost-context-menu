@@ -74,6 +74,34 @@ func Init() *cli.App {
 			},
 		},
 		{
+			Name:  "git",
+			Usage: "Manage Git GUI and Git Bash context menu",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "gui-path",
+					Value: "C:\\local.host\\modules\\git\\cmd\\git-gui.exe",
+					Usage: "Path to git-gui.exe",
+				},
+				cli.StringFlag{
+					Name:  "bash-path",
+					Value: "C:\\local.host\\modules\\git\\cmd\\git-gui.exe",
+					Usage: "Path to git-gui.exe",
+				},
+			},
+			Subcommands: []cli.Command{
+				{
+					Name:   "add",
+					Usage:  "Add Git GUI to context menu",
+					Action: addGitAll,
+				},
+				{
+					Name:   "remove",
+					Usage:  "Remove Git GUI from context menu",
+					Action: removeGitAll,
+				},
+			},
+		},
+		{
 			Name:  "symlink",
 			Usage: "Manage Local.Host Symlink Action context menu",
 			Flags: []cli.Flag{
@@ -110,8 +138,8 @@ func addGitBash(c *cli.Context) error {
 	fmt.Println("Adding Git Bash to context menu")
 
 	paths := []string{
-		"Directory\\shell\\git_bash",
-		"Directory\\Background\\shell\\git_bash",
+		"Directory\\shell\\git_shell",
+		"Directory\\Background\\shell\\git_shell",
 	}
 
 	elevate()
@@ -143,8 +171,8 @@ func removeGitBash(c *cli.Context) error {
 	fmt.Println("Removing Git Bash from context menu")
 
 	paths := []string{
-		"Directory\\shell\\git_bash",
-		"Directory\\Background\\shell\\git_bash",
+		"Directory\\shell\\git_shell",
+		"Directory\\Background\\shell\\git_shell",
 	}
 
 	elevate()
@@ -209,6 +237,97 @@ func removeGitGui(c *cli.Context) error {
 	}
 
 	elevate()
+	for _, path := range paths {
+		key := path + "\\command"
+		err := registry.DeleteKey(registry.CLASSES_ROOT, key)
+		if err != nil {
+			fmt.Println("Error deleting "+key, err)
+			return err
+		}
+
+		key = path
+		err = registry.DeleteKey(registry.CLASSES_ROOT, key)
+		if err != nil {
+			fmt.Println("Error deleting "+key, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func addGitAll(c *cli.Context) error {
+	fmt.Println("Adding Git Bash and Git GUI to context menu")
+
+	elevate()
+
+	paths := []string{
+		"Directory\\shell\\git_shell",
+		"Directory\\Background\\shell\\git_shell",
+	}
+
+	for _, path := range paths {
+		registry.DeleteKey(registry.CLASSES_ROOT, path)
+
+		key, _, keyErr := registry.CreateKey(registry.CLASSES_ROOT, path, registry.ALL_ACCESS)
+		if keyErr != nil {
+			fmt.Println(keyErr)
+			return keyErr
+		}
+		key.SetStringValue("", "Open Git Bash Here")
+		key.SetStringValue("Icon", c.String("bash-path"))
+		key.Close()
+
+		commandKey, _, commandKeyErr := registry.CreateKey(registry.CLASSES_ROOT, path+"\\command", registry.ALL_ACCESS)
+		if commandKeyErr != nil {
+			fmt.Println(commandKeyErr)
+			return commandKeyErr
+		}
+		commandKey.SetStringValue("", c.String("bash-path")+" --cd=%V")
+		commandKey.Close()
+	}
+
+	paths = []string{
+		"Directory\\shell\\git_gui",
+		"Directory\\Background\\shell\\git_gui",
+	}
+
+	for _, path := range paths {
+		registry.DeleteKey(registry.CLASSES_ROOT, path)
+
+		key, _, keyErr := registry.CreateKey(registry.CLASSES_ROOT, path, registry.ALL_ACCESS)
+		if keyErr != nil {
+			fmt.Println(keyErr)
+			return keyErr
+		}
+		key.SetStringValue("", "Open Git GUI Here")
+		key.SetStringValue("Icon", c.String("gui-path"))
+		key.Close()
+
+		commandKey, _, commandKeyErr := registry.CreateKey(registry.CLASSES_ROOT, path+"\\command", registry.ALL_ACCESS)
+		if commandKeyErr != nil {
+			fmt.Println(commandKeyErr)
+			return commandKeyErr
+		}
+		commandKey.SetStringValue("", c.String("gui-path")+" --cd=%V")
+		commandKey.Close()
+	}
+
+	return nil
+}
+
+func removeGitAll(c *cli.Context) error {
+	fmt.Println("Removing Git Bash and Git GUI from context menu")
+
+	elevate()
+
+	paths := []string{
+		"Directory\\shell\\git_shell",
+		"Directory\\Background\\shell\\git_shell",
+		"Directory\\shell\\git_gui",
+		"Directory\\Background\\shell\\git_gui",
+	}
+
 	for _, path := range paths {
 		key := path + "\\command"
 		err := registry.DeleteKey(registry.CLASSES_ROOT, key)
