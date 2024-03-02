@@ -79,7 +79,7 @@ func Init() *cli.App {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "path",
-					Value: "C:\\local.host\\modules\\symlink\\symlink.exe",
+					Value: "C:\\local.host\\modules\\tools\\symlink.exe",
 					Usage: "Path to git-gui.exe",
 				},
 				cli.StringFlag{
